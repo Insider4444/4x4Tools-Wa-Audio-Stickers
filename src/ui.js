@@ -2777,6 +2777,7 @@
       });
 
       const loadFile = async (f) => {
+        setXMsg("");
         // Smart auto-routing if user drops an image, GIF, or audio file on Video tab
         if (WAAS.isAudioFile(f)) {
           G.switchToTab("image");
@@ -2853,6 +2854,7 @@
         icon: "video",
         onFile: loadFile,
         onClear: () => {
+          setXMsg("");
           s.file = null;
           s.noAudio = false;
           silentBanner.style.display = "none";
@@ -2863,6 +2865,78 @@
         },
       });
 
+      // Load a video straight from an X (Twitter) post link (downloaded by the extension, see src/xlink.js).
+      const xInput = h("input", {
+        type: "text",
+        class: "grow",
+        placeholder: "…or paste an X (Twitter) post link",
+        "aria-label": "X (Twitter) post link",
+        spellcheck: false,
+        autocomplete: "off",
+        style: "min-width:0",
+      });
+      const xBtn = h("button", { class: "sec", textContent: "Load from X" });
+      const xRow = h("div", { class: "row tight", style: "margin-top:8px" }, xInput, xBtn);
+      const xMsg = h("div", { class: "status", style: "margin-top:2px;display:none" });
+      const setXMsg = (text, isErr) => {
+        xMsg.textContent = text || "";
+        xMsg.style.display = text ? "" : "none";
+        xMsg.className = isErr ? "status err" : "status";
+      };
+      let xLoading = false;
+      const setXLoading = (on) => {
+        xLoading = on;
+        xInput.disabled = on;
+        xBtn.textContent = on ? "Cancel" : "Load from X";
+        // The section is greyed out (pointer-events: none) while busy; keep Cancel clickable.
+        xBtn.style.pointerEvents = on ? "auto" : "";
+      };
+      const loadXLink = async (raw) => {
+        const url = String(raw != null ? raw : xInput.value).trim();
+        if (!url || xLoading || G.busy) return;
+        xInput.value = url;
+        if (!WAAS.isXLink(url)) {
+          setXMsg("That doesn't look like an X post link. It should look like x.com/name/status/123…", true);
+          return;
+        }
+        setXLoading(true);
+        setXMsg("Finding the video on X and downloading it…");
+        let res;
+        try {
+          res = await run("x-import", (signal) => WAAS.importXLink(url, { signal }));
+        } catch (e) {
+          setXMsg(e && e.name === "AbortError" ? "Canceled." : String((e && e.message) || e), true);
+          return;
+        } finally {
+          setXLoading(false);
+        }
+        await loadFile(res.file);
+        if (s.file === res.file) {
+          const who = res.author ? "@" + res.author : "X";
+          const gif = res.video && res.video.kind === "gif";
+          setXMsg(`Loaded from ${who} on X${gif ? " (a GIF, so it has no sound of its own)" : ""}.`);
+        }
+      };
+      xBtn.addEventListener("click", () => {
+        if (xLoading) {
+          if (G.abort) G.abort.abort();
+        } else {
+          loadXLink();
+        }
+      });
+      xInput.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter") {
+          ev.preventDefault();
+          loadXLink();
+        }
+      });
+      // Pasting a link into the box loads it right away.
+      xInput.addEventListener("paste", () =>
+        setTimeout(() => {
+          if (WAAS.isXLink(xInput.value)) loadXLink();
+        }, 0)
+      );
+
       trimmer.onChange(changed);
       const form = makeForm({
         id: "video",
@@ -2870,7 +2944,7 @@
         icon: "video",
         desc: "Clip any video with its built-in audio into an animated WhatsApp audio sticker.",
         sources: [
-          { title: "Select Video", body: [picker.el, silentBanner], ready: () => !!s.file },
+          { title: "Select Video", body: [picker.el, xRow, xMsg, silentBanner], ready: () => !!s.file },
           { title: "Trim Clip", body: [trimEmpty, trimWrap], ready: () => trimmer.loaded, enabled: () => trimmer.loaded },
         ],
         fmt,
@@ -2879,6 +2953,7 @@
         getTrimmer: () => trimmer,
       });
       form.loadVideoFile = loadFile;
+      form.loadXLink = loadXLink;
       return form;
     }
 
@@ -3464,6 +3539,14 @@
       const activeEl = root.activeElement || document.activeElement;
       const tag = activeEl && activeEl.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA") return;
+      // A copied X (Twitter) post link loads its video into Video + Sound.
+      const text = ev.clipboardData && ev.clipboardData.getData ? ev.clipboardData.getData("text/plain") : "";
+      if (text && WAAS.isXLink && WAAS.isXLink(text)) {
+        ev.preventDefault();
+        G.switchToTab("video");
+        G.forms[0].loadXLink(text.trim());
+        return;
+      }
       const items = ev.clipboardData && ev.clipboardData.items;
       if (!items) return;
       for (const it of items) {
