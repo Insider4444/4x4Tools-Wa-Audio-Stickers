@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "4x4Tools-Wa-Audio-Stickers",
+  "version": "1.0.0",
+  "description": "Create and send WhatsApp audio stickers from videos, GIFs, images, and audio clips directly in WhatsApp Web. 100% local processing.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "permissions": ["storage"],
+  "host_permissions": ["https://web.whatsapp.com/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "4x4Tools-Wa-Audio-Stickers — Create Audio Sticker",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png"
+    }
+  },
+  "options_page": "logs.html",
+  "content_scripts": [
+    {
+      "matches": ["https://web.whatsapp.com/*"],
+      "js": ["src/bridge.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://web.whatsapp.com/*"],
+      "js": ["src/logger.js", "src/convert.js", "src/wa.js", "src/ui.js", "src/main.js"],
+      "run_at": "document_idle",
+      "world": "MAIN"
+    }
+  ]
+}

@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>4x4Tools-Wa-Audio-Stickers — Diagnostic Logs</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --surface: #ffffff;
+      --fg: #111b21;
+      --muted: #667781;
+      --line: #dce2e6;
+      --accent: #00a884;
+      --accent-hover: #008f70;
+      --err: #d93025;
+      --err-bg: rgba(217, 48, 37, 0.08);
+      --warn: #c77c02;
+      --warn-bg: rgba(210, 154, 0, 0.1);
+      --code-bg: #f8fafb;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b141a;
+        --surface: #111b21;
+        --fg: #e9edef;
+        --muted: #8696a0;
+        --line: #233138;
+        --accent: #00a884;
+        --accent-hover: #06cf9c;
+        --err: #f87171;
+        --err-bg: rgba(248, 113, 113, 0.12);
+        --warn: #fbbf24;
+        --warn-bg: rgba(251, 191, 36, 0.12);
+        --code-bg: #17232b;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 20px;
+      font: 13.5px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+    }
+    .wrap {
+      max-width: 1160px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      height: calc(100vh - 40px);
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px 18px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand img { width: 34px; height: 34px; border-radius: 8px; }
+    h1 { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+    .sub { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+    .stats { display: flex; gap: 8px; flex-wrap: wrap; }
+    .pill {
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--code-bg);
+      font-size: 12px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+    .pill.err { color: var(--err); border-color: transparent; background: var(--err-bg); }
+    .pill.warn { color: var(--warn); border-color: transparent; background: var(--warn-bg); }
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 14px;
+    }
+    input[type="search"] {
+      flex: 1;
+      min-width: 200px;
+      padding: 7px 11px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--code-bg);
+      color: var(--fg);
+      font: inherit;
+    }
+    input[type="search"]:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+    .seg {
+      display: inline-flex;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .seg button {
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      color: var(--muted);
+      padding: 6px 11px;
+      font-size: 12.5px;
+      font-weight: 600;
+    }
+    .seg button.on { background: var(--accent); color: #fff; }
+    button {
+      padding: 7px 13px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--fg);
+      font: inherit;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s;
+    }
+    button:hover { border-color: var(--accent); }
+    button.main { background: var(--accent); color: #fff; border-color: var(--accent); }
+    button.main:hover { background: var(--accent-hover); }
+    button.danger { color: var(--err); }
+    button.danger:hover { background: var(--err-bg); border-color: var(--err); }
+    #log {
+      flex: 1;
+      min-height: 240px;
+      overflow: auto;
+      font: 12px/1.45 ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .entry {
+      padding: 3px 6px;
+      border-radius: 5px;
+      margin-bottom: 2px;
+    }
+    .entry.e { color: var(--err); background: var(--err-bg); }
+    .entry.w { color: var(--warn); background: var(--warn-bg); }
+    .empty { color: var(--muted); text-align: center; padding: 40px 16px; font-family: system-ui, sans-serif; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <img src="icons/icon-48.png" alt="">
+        <div>
+          <h1>4x4Tools-Wa-Audio-Stickers — Diagnostic Logs</h1>
+          <div class="sub">Local activity & troubleshooting log. Phone numbers and group IDs are automatically masked.</div>
+        </div>
+      </div>
+      <div class="stats" id="stats"></div>
+    </header>
+    <div class="toolbar">
+      <input type="search" id="search" placeholder="Filter events, errors, or filenames…">
+      <div class="seg" role="group" aria-label="Log level filter">
+        <button id="f-all" class="on">All</button>
+        <button id="f-warn">Warnings &amp; Errors</button>
+        <button id="f-err">Errors Only</button>
+      </div>
+      <button class="main" id="dl">Download JSON</button>
+      <button id="copy">Copy JSON</button>
+      <button class="danger" id="clear">Clear Log</button>
+    </div>
+    <div id="log"></div>
+  </div>
+  <script src="logs.js"></script>
+</body>
+</html>
