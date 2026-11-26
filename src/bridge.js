@@ -78,6 +78,20 @@
       safeSendRuntime({ waas: "openLog" });
     } else if (d.__waas === "uiReady") {
       safeSendRuntime({ waas: "pageReady" });
+    } else if (d.__waas === "xImport" && d.reqId) {
+      // The page asks for an X post's video; the service worker downloads it and we hand back the bytes.
+      const reply = (payload) =>
+        window.postMessage(Object.assign({ __waas: "xImportResponse", reqId: d.reqId }, payload), location.origin);
+      try {
+        chrome.runtime.sendMessage({ waas: "xImport", url: String(d.url || "").slice(0, 2000) }, (res) => {
+          if (chrome.runtime.lastError) {
+            return reply({ ok: false, error: "Extension error: " + chrome.runtime.lastError.message });
+          }
+          reply(res || { ok: false, error: "No answer from the extension." });
+        });
+      } catch (e) {
+        reply({ ok: false, error: "The extension was reloaded. Refresh WhatsApp Web (F5) and try again." });
+      }
     }
   });
 
